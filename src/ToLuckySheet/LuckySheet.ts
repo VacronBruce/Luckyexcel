@@ -306,6 +306,100 @@ export class LuckySheet extends LuckySheetBase {
             }
             
         } 
+
+        let oneCellAnchors = this.readXml.getElementsByTagName("xdr:oneCellAnchor", drawingFile);
+        if (oneCellAnchors!=null && oneCellAnchors.length>0) {
+            for(let i=0;i<oneCellAnchors.length;i++) {
+                let oneCellAnchor = oneCellAnchors[i];
+                let editAs = getXmlAttibute(oneCellAnchor.attributeList, "editAs", "oneCell");
+                let xdrFroms = oneCellAnchor.getInnerElements("xdr:from"), xdrTos = oneCellAnchor.getInnerElements("xdr:to");
+                let xdr_blipfills = oneCellAnchor.getInnerElements("a:blip");
+                if(xdrFroms!=null && xdr_blipfills!=null && xdrFroms.length>0 && xdr_blipfills.length>0){
+                    let xdrFrom = xdrFroms[0], xdr_blipfill = xdr_blipfills[0];
+                    let rembed = getXmlAttibute(xdr_blipfill.attributeList, "r:embed", null);
+
+                    let imageObject = this.getBase64ByRid(rembed, drawingRelsFile);
+
+                    let x_n =0,y_n = 0;
+                    let cx_n = 0, cy_n = 0;
+
+
+                    let xdr_xfrms = oneCellAnchor.getInnerElements("a:xfrm");
+                    let xdr_xfrm = xdr_xfrms[0];
+                    let aoff = xdr_xfrm.getInnerElements("a:off"), aext = xdr_xfrm.getInnerElements("a:ext");
+
+                    if(aoff!=null && aext!=null && aoff.length>0 && aext.length>0){
+                        let aoffAttribute = aoff[0].attributeList, aextAttribute = aext[0].attributeList;
+                        let x = getXmlAttibute(aoffAttribute, "x", null);
+                        let y = getXmlAttibute(aoffAttribute, "y", null);
+
+                        let cx = getXmlAttibute(aextAttribute, "cx", null);
+                        let cy = getXmlAttibute(aextAttribute, "cy", null);
+
+                        if(x!=null && y!=null && cx!=null && cy!=null && imageObject !=null){
+                            x_n = getPxByEMUs(parseInt(x),),y_n = getPxByEMUs(parseInt(y));
+                            cx_n = getPxByEMUs(parseInt(cx)),cy_n = getPxByEMUs(parseInt(cy));
+                        }
+                        imageObject.fromCol = this.getXdrValue(xdrFrom.getInnerElements("xdr:col"));
+                        imageObject.fromColOff = getPxByEMUs(this.getXdrValue(xdrFrom.getInnerElements("xdr:colOff")));
+                        imageObject.fromRow= this.getXdrValue(xdrFrom.getInnerElements("xdr:row"));
+                        imageObject.fromRowOff = getPxByEMUs(this.getXdrValue(xdrFrom.getInnerElements("xdr:rowOff")));
+    
+                        imageObject.toCol = this.getXdrValue(xdrFrom.getInnerElements("xdr:col"));
+                        imageObject.toColOff = cx_n + imageObject.fromColOff;
+                        imageObject.toRow = this.getXdrValue(xdrFrom.getInnerElements("xdr:row"));
+                        imageObject.toRowOff = cy_n + imageObject.fromRowOff;
+    
+                        imageObject.originWidth = cx_n;
+                        imageObject.originHeight = cy_n;
+                        
+                        if(editAs=="absolute"){
+                            imageObject.type = "3";
+                        }
+                        else if(editAs=="oneCell"){
+                            imageObject.type = "2";
+                        }
+                        else{
+                            imageObject.type = "1";
+                        }
+
+                        imageObject.isFixedPos = false;
+                        imageObject.fixedLeft = 0;
+                        imageObject.fixedTop = 0;
+    
+                        let imageBorder:IluckyImageBorder = {
+                            color: "#000",
+                            radius: 0,
+                            style: "solid",
+                            width: 0
+                        }
+                        imageObject.border = imageBorder;
+    
+                        let imageCrop:IluckyImageCrop = {
+                            height: cy_n,
+                            offsetLeft: 0,
+                            offsetTop: 0,
+                            width: cx_n
+                        }
+                        imageObject.crop = imageCrop;
+    
+                        let imageDefault:IluckyImageDefault = {
+                            height: cy_n,
+                            left: x_n,
+                            top: y_n,
+                            width: cx_n
+                        }
+                        imageObject.default = imageDefault;
+    
+                        if(this.images==null){
+                            this.images = {};
+                        }
+                        console.warn(`we got one anchor ${imageObject}`);  
+                        this.images[generateRandomIndex("image")] = imageObject;
+                    }
+                }
+            }
+        }
     }
 
     private getXdrValue(ele:Element[]):number{
