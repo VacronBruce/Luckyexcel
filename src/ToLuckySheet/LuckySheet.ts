@@ -312,7 +312,7 @@ export class LuckySheet extends LuckySheetBase {
             for(let i=0;i<oneCellAnchors.length;i++) {
                 let oneCellAnchor = oneCellAnchors[i];
                 let editAs = getXmlAttibute(oneCellAnchor.attributeList, "editAs", "oneCell");
-                let xdrFroms = oneCellAnchor.getInnerElements("xdr:from"), xdrTos = oneCellAnchor.getInnerElements("xdr:to");
+                let xdrFroms = oneCellAnchor.getInnerElements("xdr:from");
                 let xdr_blipfills = oneCellAnchor.getInnerElements("a:blip");
                 if(xdrFroms!=null && xdr_blipfills!=null && xdrFroms.length>0 && xdr_blipfills.length>0){
                     let xdrFrom = xdrFroms[0], xdr_blipfill = xdr_blipfills[0];
@@ -340,6 +340,22 @@ export class LuckySheet extends LuckySheetBase {
                             x_n = getPxByEMUs(parseInt(x),),y_n = getPxByEMUs(parseInt(y));
                             cx_n = getPxByEMUs(parseInt(cx)),cy_n = getPxByEMUs(parseInt(cy));
                         }
+
+                        let ext = oneCellAnchor.getInnerElements("xdr:ext");
+                        let e_cx = getXmlAttibute(ext[0].attributeList, "cx", null);
+                        let e_cy = getXmlAttibute(ext[0].attributeList, "cy", null);
+                        let e_cx_n = getPxByEMUs(parseInt(e_cx));
+                        let e_cy_n = getPxByEMUs(parseInt(e_cy));
+                        
+                        if (cx_n == 0) {
+                            cx_n = e_cx_n;
+                        }
+
+                        if (cy_n == 0) {
+                            cy_n = e_cy_n;
+                        }
+                        console.warn(`xx: ${e_cx_n}, yy: ${e_cy_n}, x: ${cx_n}, y: ${cy_n}`);
+
                         imageObject.fromCol = this.getXdrValue(xdrFrom.getInnerElements("xdr:col"));
                         imageObject.fromColOff = getPxByEMUs(this.getXdrValue(xdrFrom.getInnerElements("xdr:colOff")));
                         imageObject.fromRow= this.getXdrValue(xdrFrom.getInnerElements("xdr:row"));
@@ -394,7 +410,6 @@ export class LuckySheet extends LuckySheetBase {
                         if(this.images==null){
                             this.images = {};
                         }
-                        console.warn(`we got one anchor ${imageObject}`);  
                         this.images[generateRandomIndex("image")] = imageObject;
                     }
                 }
